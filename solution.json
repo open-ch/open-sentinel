@@ -110,7 +110,7 @@
         },
         "containerImage": {
             "type": "string",
-            "defaultValue": "ghcr.io/observiq/observiq-otel-collector:latest",
+            "defaultValue": "ghcr.io/observiq/observiq-otel-collector:1.95.0",
             "metadata": {
                 "description": "Log processor container image."
             }
