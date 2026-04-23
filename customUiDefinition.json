@@ -167,7 +167,7 @@
             "name": "containerImage",
             "type": "Microsoft.Common.TextBox",
             "label": "Container Image",
-            "defaultValue": "ghcr.io/observiq/observiq-otel-collector:latest",
+            "defaultValue": "ghcr.io/observiq/observiq-otel-collector:1.98.0",
             "multiLine": false,
             "constraints": {
               "required": false
