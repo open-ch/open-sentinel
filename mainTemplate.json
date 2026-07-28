@@ -1,0 +1,1015 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "2.0.6",
+    "parameters": {
+        "senderPrincipalId": {
+            "type": "string",
+            "metadata": {
+                "description": "Object (principal) ID of the existing Entra service principal that will authenticate as the Sender Principal. Not the application/client ID."
+            }
+        },
+        "tags": {
+            "type": "object",
+            "defaultValue": {},
+            "metadata": {
+                "description": "Tags applied to the Data Collection Endpoint."
+            }
+        },
+        "workspaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the existing Sentinel-enabled Log Analytics workspace."
+            }
+        },
+        "workspaceResourceGroupName": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource group containing the existing Log Analytics workspace."
+            }
+        }
+    },
+    "variables": {
+        "workspaceResourceId": "[resourceId(subscription().subscriptionId, parameters('workspaceResourceGroupName'), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2025-04-01",
+            "name": "opensystems-integration-resources",
+            "properties": {
+                "expressionEvaluationOptions": {
+                    "scope": "inner"
+                },
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "location": {
+                            "type": "string"
+                        },
+                        "senderPrincipalId": {
+                            "type": "string"
+                        },
+                        "tags": {
+                            "type": "object",
+                            "defaultValue": {}
+                        },
+                        "workspaceResourceId": {
+                            "type": "string"
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Insights/dataCollectionEndpoints",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-otlp-dce",
+                            "location": "[parameters('location')]",
+                            "tags": "[parameters('tags')]",
+                            "properties": {
+                                "networkAcls": {
+                                    "publicNetworkAccess": "Enabled"
+                                },
+                                "logsIngestion": {
+                                    "enabled": true
+                                }
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-auth-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-auth-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-auth-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-auth-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-dhcp-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-dhcp-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-dhcp-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-dhcp-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-dns_inspection-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-dns_inspection-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-dns_inspection-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-dns_inspection-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-firewall-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-firewall-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-firewall-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-firewall-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-mep-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-mep-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-mep-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-mep-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-ndr-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-ndr-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-ndr-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-ndr-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-proxy-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-proxy-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-proxy-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-proxy-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-zeek-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-zeek-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-zeek-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-zeek-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Insights/dataCollectionRules",
+                            "apiVersion": "2024-03-11",
+                            "name": "opensystems-ztna-dcr",
+                            "location": "[parameters('location')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]"
+                            ],
+                            "properties": {
+                                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce')]",
+                                "destinations": {
+                                    "logAnalytics": [
+                                        {
+                                            "name": "logAnalyticsDestination",
+                                            "workspaceResourceId": "[parameters('workspaceResourceId')]"
+                                        }
+                                    ]
+                                },
+                                "directDataSources": {
+                                    "otelLogs": [
+                                        {
+                                            "streams": [
+                                                "Microsoft-OTel-Logs"
+                                            ],
+                                            "enrichWithResourceAttributes": [
+                                                "*"
+                                            ],
+                                            "name": "otelLogsDataSourceDirect"
+                                        }
+                                    ]
+                                },
+                                "dataFlows": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-OTel-Logs"
+                                        ],
+                                        "destinations": [
+                                            "logAnalyticsDestination"
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-ztna-dcr'), parameters('senderPrincipalId'), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                            "scope": "[concat('Microsoft.Insights/dataCollectionRules', '/', 'opensystems-ztna-dcr')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-ztna-dcr')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                                "principalId": "[parameters('senderPrincipalId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "collectorConnection": {
+                            "type": "object",
+                            "value": {
+                                "DCE_URL": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', 'opensystems-otlp-dce'), '2024-03-11').logsIngestion.endpoint]",
+                                "DCR_AUTH_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-auth-dcr'), '2024-03-11').immutableId]",
+                                "DCR_DHCP_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-dhcp-dcr'), '2024-03-11').immutableId]",
+                                "DCR_DNS_INSPECTION_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-dns_inspection-dcr'), '2024-03-11').immutableId]",
+                                "DCR_FIREWALL_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-firewall-dcr'), '2024-03-11').immutableId]",
+                                "DCR_MEP_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-mep-dcr'), '2024-03-11').immutableId]",
+                                "DCR_NDR_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-ndr-dcr'), '2024-03-11').immutableId]",
+                                "DCR_PROXY_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-proxy-dcr'), '2024-03-11').immutableId]",
+                                "DCR_ZEEK_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-zeek-dcr'), '2024-03-11').immutableId]",
+                                "DCR_ZTNA_ID": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', 'opensystems-ztna-dcr'), '2024-03-11').immutableId]"
+                            }
+                        }
+                    }
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[reference(variables('workspaceResourceId'), '2025-07-01', 'Full').location]"
+                    },
+                    "senderPrincipalId": {
+                        "value": "[parameters('senderPrincipalId')]"
+                    },
+                    "tags": {
+                        "value": "[parameters('tags')]"
+                    },
+                    "workspaceResourceId": {
+                        "value": "[variables('workspaceResourceId')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2025-04-01",
+            "name": "opensystems-parser-resources",
+            "resourceGroup": "[parameters('workspaceResourceGroupName')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'opensystems-integration-resources')]"
+            ],
+            "properties": {
+                "expressionEvaluationOptions": {
+                    "scope": "inner"
+                },
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "workspaceName": {
+                            "type": "string"
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAlertEventOpenSystemsNdrAlerts')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "AlertEvent ASIM parser for Open Systems NDR",
+                                "functionAlias": "vimAlertEventOpenSystemsNdrAlerts",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        NDR / Alerts (ndr.alerts)\n// ASIM schema:   Alert Event\n// Deploy alias:  vimAlertEventOpenSystemsNdrAlerts\n// Owner:         ndr team\n// Aggregated by: ../../../../shared/parsers/vimAlertEventOpenSystems.kql\n//\n// NDR emits a lightweight \"alerts\" stream (distributor job ndr.alerts), separate from the\n// richer CSE stream (job ndr/ndr-eventprocessor). A record is produced when an NDR event\n// crossed an elevated threatscore threshold. Both streams carry the same product\n// discriminator ResourceAttributes['osag.product.name'] == \"ndr\"; the alerts stream is\n// additionally tagged by the distributor with ResourceAttributes['osag.stream'] == \"alerts\"\n// (set in the chart's transform/ndr_alerts processor), which is the sub-discriminator used\n// below so alert records do not collide with the CSE Network Session parser.\n//\n// These are security alerts, so they normalize onto the ASIM Alert Event schema\n// (https://learn.microsoft.com/azure/sentinel/normalization-schema-alert).\n//\n// Sample raw Body (JSON string):\n//   {\"ip_namespace\":\"e2e\",\"ip\":\"10.0.0.181\",\"firing\":true,\n//    \"timestamp_epoch_ms\":1784796117343.0,\"date\":\"2026-07-23T08:41:57Z\"}\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table; the raw\n// JSON is the Body column, ingested as a string (parse with todynamic(Body) before dotted\n// access). The single `ip` field (the host that crossed the threatscore) maps to DvcIpAddr;\n// firing / ip_namespace / timestamp_epoch_ms are carried in AdditionalFields.\n// Dynamic fields are accessed with bracket notation (Body['date']) because `date` is a\n// reserved KQL keyword that cannot be used with dotted access.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"ndr\"\n    | where tostring(ResourceAttributes['osag.stream']) == \"alerts\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    | project\n        TimeGenerated = todatetime(Body['date']),\n        EventStartTime = todatetime(Body['date']),\n        EventEndTime = todatetime(Body['date']),\n        EventCount = int(1),\n        EventType = \"Alert\",\n        EventSubType = \"Threat\",\n        EventOriginalType = \"ndr.alerts\",\n        EventVendor = \"Open Systems\",\n        EventProduct = \"NDR\",\n        EventSchema = \"AlertEvent\",\n        EventSchemaVersion = \"0.1\",\n        EventSeverity = \"Medium\",\n        AlertName = \"NDR threat score threshold exceeded\",\n        EventMessage = strcat(\"NDR alert firing for host \", tostring(Body['ip'])),\n        DetectionMethod = \"Network Detection and Response\",\n        ThreatCategory = \"Unknown\",\n        DvcIpAddr = tostring(Body['ip']),\n        AdditionalFields = bag_pack(\n            \"firing\", tostring(Body['firing']),\n            \"ip_namespace\", tostring(Body['ip_namespace']),\n            \"timestamp_epoch_ms\", tostring(Body['timestamp_epoch_ms']))\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuditEventOpenSystemsZtna')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "AuditEvent ASIM parser for Open Systems ZTNA",
+                                "functionAlias": "vimAuditEventOpenSystemsZtna",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        ZTNA / identity-aware connector (IDAC) audit log\n// ASIM schema:   Audit Event\n// Deploy alias:  vimAuditEventOpenSystemsZtna\n// Owner:         ztna team\n// Aggregated by: ../../../../shared/parsers/vimAuditEventOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser. Member of the unifying Open Systems\n// Audit Event parser. Keep the filtering parameter signature so the unifying parser can\n// push filters down for performance.\n//\n// ZTNA audit records are admin configuration-change events: a subject (admin user)\n// performs an action (create/update/delete) on a configured authority (the managed\n// object) with a success/failure result. These normalize onto the ASIM Audit Event\n// schema (https://learn.microsoft.com/azure/sentinel/normalization-schema-audit).\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table; the\n// raw ZTNA record is the Body column, ingested as a string (parse with todynamic(Body)\n// before dotted access); the discriminator is ResourceAttributes['osag.product.name']\n// == \"ztna\". IDAC emits several message types under one product, so the \"audit\" stream is\n// selected via Body.message_type.\n//\n// ASIM naming note: upstream ASIM names the unifier `_Im_AuditEvent` and per-source\n// parsers `imAuditEvent\u003cVendor\u003e`. Open Systems keeps the repo `vim\u003cschema\u003eOpenSystems`\n// convention (matches every other source here); confirm the final FunctionAlias with OSAP\n// before the customer-side savedSearches deploy.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    // Discriminate on the resource attribute set by the OTel distributor.\n    | where tostring(ResourceAttributes['osag.product.name']) == \"ztna\"\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    // IDAC emits several message types; select the admin-config \"audit\" stream.\n    | where tostring(Body.message_type) == \"audit\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Map raw Body fields onto the ASIM Audit Event schema (see schema.json).\n    | project\n        // ZTNA audit records carry a payload timestamp, but for consistency with the\n        // activity parser and the OTLP MV we use the OTLP record time for all three.\n        TimeGenerated,\n        EventStartTime = TimeGenerated,\n        EventEndTime = TimeGenerated,\n        EventCount = int(1),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"ZTNA\",\n        EventSchema = \"AuditEvent\",\n        EventSchemaVersion = \"0.1.2\",\n        Dvc = \"ZTNA\",\n        EventUid = tostring(Body.uuid),\n        EventType = case(\n            tostring(Body.action) == \"create\", \"Create\",\n            tostring(Body.action) == \"update\", \"Set\",\n            tostring(Body.action) == \"delete\", \"Delete\",\n            \"Other\"),\n        Operation = tostring(Body.action),\n        EventResult = case(\n            tostring(Body.result) == \"success\", \"Success\",\n            \"Failure\"),\n        EventResultDetails = tostring(Body.result),\n        Object = tostring(Body.authority_name),\n        ObjectType = \"Configuration Atom\",\n        ObjectId = tostring(Body.object_name),\n        ActorUsername = tostring(Body.subject_name),\n        ActorUsernameType = \"UPN\",\n        TargetDomain = tostring(Body.ztna_tenant)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuthenticationOpenSystemsAuth')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Authentication ASIM parser for Open Systems Auth",
+                                "functionAlias": "vimAuthenticationOpenSystemsAuth",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        Open Systems Auth / Zitadel identity provider login events\n// ASIM schema:   Authentication\n// Deploy alias:  vimAuthenticationOpenSystemsAuth\n// Owner:         OSAP\n// Aggregated by: ../../../shared/parsers/vimAuthenticationOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser. It is a member of the unifying\n// Open Systems Authentication parser. Keep the filtering parameter signature so the\n// unifying parser can push filters down for performance.\n//\n// Auth records are Zitadel login-attempt notifications: the distributor's\n// transform/auth_attribute + transform/auth processors (charts/logs-api/templates/\n// _helpers.tpl) already select only \"authentication\"-typed Zitadel log lines, unwrap\n// the nested JSON payload, and keep exactly {login, remoteAddress, result, time,\n// error} as Body (companyId is promoted to the resource attribute company_id for\n// customer routing and is intentionally not exported to Sentinel). These normalize\n// onto the ASIM Authentication schema\n// (https://learn.microsoft.com/azure/sentinel/normalization-schema-authentication).\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    // Discriminate on the resource attribute set by the OTel distributor.\n    | where tostring(ResourceAttributes['osag.product.name']) == \"auth\"\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    | project\n        TimeGenerated = todatetime(Body[\"time\"]),\n        EventStartTime = todatetime(Body[\"time\"]),\n        EventEndTime = todatetime(Body[\"time\"]),\n        EventCount = int(1),\n        EventType = \"Logon\",\n        EventResult = case(\n            tostring(Body.result) has_cs \"successful\", \"Success\",\n            tostring(Body.result) has_cs \"failure\", \"Failure\",\n            \"NA\"),\n        EventResultDetails = tostring(Body.error),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"Auth\",\n        EventSchema = \"Authentication\",\n        EventSchemaVersion = \"0.1.4\",\n        Dvc = \"Auth\",\n        TargetUsername = tostring(Body.login),\n        TargetUsernameType = \"UPN\",\n        SrcIpAddr = tostring(Body.remoteAddress[0])\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuthenticationOpenSystemsMep')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Authentication ASIM parser for Open Systems MEP",
+                                "functionAlias": "vimAuthenticationOpenSystemsMep",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        MEP (Mobile Entry Point) / Cisco ASA VPN login (syslog)\n// ASIM schema:   Authentication\n// Deploy alias:  vimAuthenticationOpenSystemsMep\n// Owner:         mep team\n// Aggregated by: ../../../shared/parsers/vimAuthenticationOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser. It is a member of the unifying\n// Open Systems Authentication parser. Keep the filtering parameter signature so the\n// unifying parser can push filters down for performance.\n//\n// MEP login records are VPN session assignments emitted by Cisco ASA: when a user\n// authenticates, the ASA assigns a session and logs the group, user, client IP and\n// assigned VPN IP. These normalize onto the ASIM Authentication schema\n// (https://learn.microsoft.com/azure/sentinel/normalization-schema-authentication).\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table;\n// the raw ASA record is the Body column, ingested as a STRING. Unlike the JSON sources,\n// ASA logs are free-form syslog text, so fields are pulled with extract() regexes\n// (the same patterns mv_otlp_logs_to ... logins uses) rather than todynamic(Body).\n// The discriminator is ResourceAttributes['osag.product.name'] == \"mep\". Only the\n// \"assigned to session\" line carries a successful login, so it is selected as the\n// \"logins\" stream.\n//\n// Field source-of-truth: the logins columns in\n// platforms/data-mesh/clickhouse/config/atlas/schemas/mep/logins.ch.hcl\n// (logins_local_mv_tmp extracts the raw ASA fields onto those columns via the same\n// regexes used below).\n//\n// Deliberately unmapped (no clean ASIM Authentication home):\n//   group        - VPN tunnel-group assignment\n//   assigned_ip  - the internal VPN address allocated to the client\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    // Discriminate on the resource attribute set by the OTel distributor.\n    | where tostring(ResourceAttributes['osag.product.name']) == \"mep\"\n    // ASA emits many syslog lines; select the successful session-assignment login line.\n    | where Body has \"assigned to session\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is free-form ASA syslog text; pull fields with the same regexes as the MV.\n    | project\n        // ASA lines carry no separate payload timestamp; the event time is the OTLP\n        // record time (logins_local_mv_tmp uses the same LogRecord Timestamp).\n        TimeGenerated,\n        EventVendor = \"Open Systems\",\n        EventProduct = \"MEP\",\n        EventSchema = \"Authentication\",\n        EventSchemaVersion = \"0.1.4\",\n        EventType = \"Logon\",\n        // Only successful session assignments reach this parser.\n        EventResult = \"Success\",\n        Dvc = \"MEP\",\n        TargetUsername = extract(@\"User \u003c([^\u003e]+)\u003e\", 1, tostring(Body)),\n        TargetUsernameType = \"Simple\",\n        SrcIpAddr = extract(@\"IP \u003c([^\u003e]+)\u003e\", 1, tostring(Body))\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuthenticationOpenSystemsZtna')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Authentication ASIM parser for Open Systems ZTNA",
+                                "functionAlias": "vimAuthenticationOpenSystemsZtna",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        ZTNA / identity-aware connector (IDAC) activity log\n// ASIM schema:   Authentication\n// Deploy alias:  vimAuthenticationOpenSystemsZtna\n// Owner:         ztna team\n// Aggregated by: ../../../../shared/parsers/vimAuthenticationOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser. It is a member of the unifying\n// Open Systems Authentication parser. Keep the filtering parameter signature so the\n// unifying parser can push filters down for performance.\n//\n// ZTNA activity records represent the full user activity stream: application-access\n// decisions — a subject (user) is allowed/denied access to a ZTNA-protected object\n// (application) via the IDAC, carrying an access_allowed/access_denied status — and\n// generic user activity (e.g. agent downloads) that carries no status. All are\n// subject-\u003etarget access events and normalize onto the ASIM Authentication schema\n// (https://learn.microsoft.com/azure/sentinel/normalization-schema-authentication).\n// The access/activity kind is classified into EventSubType.\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table;\n// the raw ZTNA record is the Body column, ingested as a string (parse with\n// todynamic(Body) before dotted access); the discriminator is ResourceAttributes\n// ['osag.product.name'] == \"ztna\". IDAC emits several message types under one product,\n// so the \"activity\" stream is selected via Body.message_type.\n//\n// Field source-of-truth: the activity_logs columns in\n// platforms/data-mesh/clickhouse/config/atlas/schemas/ztna/ztna_activity_logs.ch.hcl\n// (mv_otlp_logs_to_ztna_activity_logs_local maps the raw log fields onto those columns).\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    // Discriminate on the resource attribute set by the OTel distributor.\n    | where tostring(ResourceAttributes['osag.product.name']) == \"ztna\"\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    // IDAC emits several message types; select the user-access \"activity\" stream.\n    | where tostring(Body.message_type) == \"activity\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Map raw Body fields onto the ASIM Authentication schema (see schema.json).\n    // Access decisions carry a status; generic activity (e.g. agent downloads) does not.\n    | extend ActivityStatus = tostring(Body.status)\n    | project\n        // ZTNA records carry no payload timestamp; the event time is the OTLP\n        // record time (mv_otlp_logs_to_ztna_activity_logs uses the same LogRecord Timestamp).\n        TimeGenerated,\n        EventVendor = \"Open Systems\",\n        EventProduct = \"ZTNA\",\n        EventSchema = \"Authentication\",\n        EventSchemaVersion = \"0.1.4\",\n        // ASIM Authentication EventType enum is Logon/Logoff/Elevate; ZTNA activity is\n        // fundamentally an access/logon. Finer classification lives in EventSubType.\n        EventType = \"Logon\",\n        EventSubType = iff(isnotempty(ActivityStatus), \"ApplicationAccess\", \"Activity\"),\n        EventResult = case(\n            ActivityStatus == \"access_allowed\", \"Success\",\n            ActivityStatus == \"access_denied\", \"Failure\",\n            \"NA\"),\n        EventResultDetails = ActivityStatus,\n        EventMessage = tostring(Body.message),\n        EventUid = tostring(Body.uuid),\n        Dvc = \"ZTNA\",\n        TargetUsername = tostring(Body.subject_name),\n        TargetUsernameType = \"UPN\",\n        TargetAppName = tostring(Body.object_name_portal),\n        TargetAppId = tostring(Body.object_name),\n        TargetAppType = \"Resource\",\n        TargetDomain = tostring(Body.ztna_tenant),\n        SrcIpAddr = tostring(Body.remote_address)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDhcpEventOpenSystemsDhcp')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "DhcpEvent ASIM parser for Open Systems DHCP",
+                                "functionAlias": "vimDhcpEventOpenSystemsDhcp",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        Netcore / DHCP server (CPE DHCP lease events)\n// ASIM schema:   DhcpEvent\n// Deploy alias:  vimDhcpEventOpenSystemsDhcp\n// Owner:         netcore team\n// Aggregated by: ../../../shared/parsers/vimDhcpEventOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser for the netcore/CPE DHCP server stream.\n// The CPE runs a DHCP server that emits one lease-operation record per client request;\n// it is onboarded as its own product under the netcore service family (the same way\n// ndr/zeek is a distinct product from ndr/ndr under one service family).\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table; the\n// raw DHCP record is the Body column, ingested as a string (parse with todynamic(Body)\n// before dotted access); the discriminator is\n// ResourceAttributes['osag.product.name'] == \"dhcp\". The distributor must tag the DHCP\n// job with this product name in the collector pipeline (charts/logs-api\n// templates/_helpers.tpl). That routing does not exist yet, so this parser returns no\n// rows until it is added.\n//\n// EventType mapping: ASIM DhcpEvent only allows Assign / Renew / Release / DNS Update,\n// so the raw DHCP operation (DHCPDISCOVER/OFFER/REQUEST/ACK/NAK/DECLINE/RELEASE/INFORM)\n// is collapsed onto those values and the original is preserved in EventOriginalType.\n// ASIM DhcpEvent reference:\n// https://learn.microsoft.com/azure/sentinel/normalization-schema-dhcp\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"dhcp\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    | extend\n        EventTime = unixtime_milliseconds_todatetime(tolong(Body.timestamp)),\n        Operation = toupper(tostring(Body.operation))\n    | project\n        TimeGenerated = EventTime,\n        EventStartTime = EventTime,\n        EventEndTime = EventTime,\n        EventCount = int(1),\n        EventType = case(\n            Operation == \"DHCPRELEASE\", \"Release\",\n            Operation == \"DHCPINFORM\", \"Renew\",\n            \"Assign\"),\n        EventResult = iff(Operation in (\"DHCPNAK\", \"DHCPDECLINE\"), \"Failure\", \"Success\"),\n        EventOriginalType = tostring(Body.operation),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"DHCP\",\n        EventSchema = \"DhcpEvent\",\n        EventSchemaVersion = \"0.1.1\",\n        Dvc = tostring(Body.host_id),\n        DvcId = tostring(Body.host_id),\n        DvcIdType = \"Other\",\n        DvcIpAddr = tostring(Body.server_ip),\n        SrcIpAddr = tostring(Body.host_ip),\n        // ASIM: when no client hostname is available, store the client IP in SrcHostname.\n        SrcHostname = iff(isempty(tostring(Body.host_name)), tostring(Body.host_ip), tostring(Body.host_name)),\n        SrcMacAddr = tostring(Body.host_mac)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDnsOpenSystemsDnsInspection')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Dns ASIM parser for Open Systems DNS Inspection",
+                                "functionAlias": "vimDnsOpenSystemsDnsInspection",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        Firewall / DNS inspection daemon (dns.inspection.sentinel.avro topic)\n// ASIM schema:   Dns\n// Deploy alias:  vimDnsOpenSystemsDnsInspection\n// Owner:         firewall team\n// Aggregated by: ../../../shared/parsers/vimDnsOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser for the firewall DNS-inspection stream.\n// DNS inspection is a firewall feature, but it ships a payload unrelated to the fwlog\n// connection log, so it is onboarded as its own product with its own strictly-typed\n// parser (the same way ndr/zeek is a distinct product from ndr/ndr under one service\n// family). The firewall NetworkSession parser is left untouched.\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table;\n// the raw DNS-inspection record is the Body column, ingested as a string (parse with\n// todynamic(Body) before dotted access); the discriminator is ResourceAttributes\n// ['osag.product.name'] == \"dns-inspection\". The distributor must tag the DNS-inspection\n// job (Kafka topic dns.inspection.sentinel.avro.v1.6) with this product name in the\n// collector pipeline (charts/logs-api templates/_helpers.tpl). That routing does not\n// exist yet, so this parser returns no rows until it is added.\n//\n// The firewall emits the DNS response code and query type as numbers; the IANA lookup\n// tables below resolve them to names, mirroring the legacy parser documented in\n// docs/deprecated/vimDnsOpenSystemsDnsInspection.md.\n// Enum reference: https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml\nlet RCodeName = datatable(flags_rc: long, ResponseCodeName: string) [\n    0, \"NOERROR\", 1, \"FORMERR\", 2, \"SERVFAIL\", 3, \"NXDOMAIN\", 4, \"NOTIMP\",\n    5, \"REFUSED\", 6, \"YXDOMAIN\", 7, \"YXRRSET\", 8, \"NXRRSET\", 9, \"NOTAUTH\",\n    10, \"NOTZONE\", 11, \"DSOTYPENI\", 16, \"BADVERS\", 17, \"BADKEY\", 18, \"BADTIME\",\n    19, \"BADMODE\", 20, \"BADNAME\", 21, \"BADALG\", 22, \"BADTRUNC\", 23, \"BADCOOKIE\"\n];\nlet RCodeResult = datatable(flags_rc: long, ResponseCodeResult: string) [\n    0, \"Success\", 1, \"Failure\", 2, \"Failure\", 3, \"Success\", 4, \"Failure\",\n    5, \"Failure\", 6, \"Partial\", 7, \"Partial\", 8, \"Partial\", 9, \"Failure\",\n    10, \"Failure\", 11, \"Failure\", 16, \"Failure\", 17, \"Failure\", 18, \"Failure\",\n    19, \"Failure\", 20, \"Failure\", 21, \"Failure\", 22, \"Failure\", 23, \"Failure\"\n];\nlet RRTypeName = datatable(query_qtype: long, QueryTypeName: string) [\n    0, \"Reserved\", 1, \"A\", 2, \"NS\", 3, \"MD\", 4, \"MF\", 5, \"CNAME\", 6, \"SOA\",\n    7, \"MB\", 8, \"MG\", 9, \"MR\", 10, \"NULL\", 11, \"WKS\", 12, \"PTR\", 13, \"HINFO\",\n    14, \"MINFO\", 15, \"MX\", 16, \"TXT\", 17, \"RP\", 18, \"AFSDB\", 19, \"X25\", 20, \"ISDN\",\n    21, \"RT\", 22, \"NSAP\", 23, \"NSAP-PTR\", 24, \"SIG\", 25, \"KEY\", 26, \"PX\", 27, \"GPOS\",\n    28, \"AAAA\", 29, \"LOC\", 30, \"NXT\", 31, \"EID\", 32, \"NIMLOC\", 33, \"SRV\", 34, \"ATMA\",\n    35, \"NAPTR\", 36, \"KX\", 37, \"CERT\", 38, \"A6\", 39, \"DNAME\", 40, \"SINK\", 41, \"OPT\",\n    42, \"APL\", 43, \"DS\", 44, \"SSHFP\", 45, \"IPSECKEY\", 46, \"RRSIG\", 47, \"NSEC\",\n    48, \"DNSKEY\", 49, \"DHCID\", 50, \"NSEC3\", 51, \"NSEC3PARAM\", 52, \"TLSA\", 53, \"SMIMEA\",\n    55, \"HIP\", 56, \"NINFO\", 57, \"RKEY\", 58, \"TALINK\", 59, \"CDS\", 60, \"CDNSKEY\",\n    61, \"OPENPGPKEY\", 62, \"CSYNC\", 63, \"ZONEMD\", 64, \"SVCB\", 65, \"HTTPS\", 99, \"SPF\",\n    100, \"UINFO\", 101, \"UID\", 102, \"GID\", 103, \"UNSPEC\", 104, \"NID\", 105, \"L32\",\n    106, \"L64\", 107, \"LP\", 108, \"EUI48\", 109, \"EUI64\", 249, \"TKEY\", 250, \"TSIG\",\n    251, \"IXFR\", 252, \"AXFR\", 253, \"MAILB\", 254, \"MAILA\", 255, \"*\", 256, \"URI\",\n    257, \"CAA\", 258, \"AVC\", 259, \"DOA\", 260, \"AMTRELAY\", 32768, \"TA\", 32769, \"DLV\",\n    65535, \"Reserved\"\n];\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"dns-inspection\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    // Payload event time (epoch milliseconds) and the numeric DNS enums.\n    | extend\n        EventTime = unixtime_milliseconds_todatetime(tolong(Body.timestamp)),\n        EventSubType = iff(toupper(tostring(Body[\"flags\"][\"qr\"])) == \"RESPONSE\", \"response\", \"request\"),\n        flags_rc = tolong(Body[\"flags\"][\"rc\"]),\n        query_qtype = tolong(Body[\"query\"][\"qtype\"])\n    // Resolve the numeric enums to their IANA names.\n    | lookup kind=leftouter RCodeName on flags_rc\n    | lookup kind=leftouter RCodeResult on flags_rc\n    | lookup kind=leftouter RRTypeName on query_qtype\n    | project\n        TimeGenerated = EventTime,\n        EventStartTime = EventTime,\n        EventEndTime = EventTime,\n        EventCount = int(1),\n        EventType = \"Query\",\n        EventSubType,\n        EventResult = case(\n            tobool(Body.block), \"Failure\",\n            EventSubType != \"response\", \"NA\",\n            isnotempty(ResponseCodeResult), ResponseCodeResult,\n            \"Success\"),\n        EventResultDetails = coalesce(ResponseCodeName, \"Unassigned\"),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"DNS Inspection\",\n        EventSchema = \"Dns\",\n        EventSchemaVersion = \"0.1.7\",\n        Dvc = \"DNS Inspection\",\n        NetworkProtocol = toupper(tostring(Body.protocol)),\n        SrcIpAddr = tostring(Body.originator_ip),\n        SrcPortNumber = toint(Body.originator_port),\n        DstIpAddr = tostring(Body.responder_ip),\n        DstPortNumber = toint(Body.responder_port),\n        DnsQuery = trim_end(@\"\\.\", tostring(Body[\"query\"][\"name\"])),\n        DnsQueryType = toint(query_qtype),\n        DnsQueryTypeName = coalesce(QueryTypeName, \"Unassigned\"),\n        DnsResponseCode = toint(flags_rc),\n        DnsResponseCodeName = coalesce(ResponseCodeName, \"Unassigned\"),\n        DnsResponseName = iff(EventSubType == \"response\", tostring(Body.answers), \"\")\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDnsOpenSystemsZeek')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Dns ASIM parser for Open Systems Zeek",
+                                "functionAlias": "vimDnsOpenSystemsZeek",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        NDR / Zeek dns.log\n// ASIM schema:   Dns\n// Deploy alias:  vimDnsOpenSystemsZeek\n// Owner:         ndr team\n// Aggregated by: ../../../../shared/parsers/vimDnsOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser for the Zeek dns.log stream. One product\n// (Zeek) fans out into several ASIM schemas: conn -\u003e NetworkSession, dns -\u003e Dns,\n// http -\u003e WebSession. Each stream is its own folder with its own schema.json + parser.\n//\n// Ingestion model (ADR-0002, native OTLP): all logs land in the single OTelLogs\n// table. The raw Zeek record is the Body column, ingested as a string (parse with\n// todynamic(Body) before field access); the product discriminator is the\n// resource attribute osag.product.name, and the stream is selected via the Zeek log path.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"zeek\"\n    // Body is ingested as a JSON string; parse it before field access.\n    | extend Body = todynamic(Body)\n    | where tostring(Body.log) == \"dns.log\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    | project\n        TimeGenerated = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventStartTime = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventEndTime = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventCount = int(1),\n        EventType = \"Query\",\n        EventResult = iff(tostring(Body.rcode_name) == \"NOERROR\", \"Success\", \"Failure\"),\n        EventResultDetails = tostring(Body.rcode_name),\n        EventUid = tostring(Body.uid),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"Zeek\",\n        EventSchema = \"Dns\",\n        EventSchemaVersion = \"0.1.7\",\n        Dvc = \"Zeek\",\n        DvcHostname = tostring(Body.host),\n        SrcIpAddr = tostring(Body[\"id.orig_h\"]),\n        SrcPortNumber = toint(Body[\"id.orig_p\"]),\n        DstIpAddr = tostring(Body[\"id.resp_h\"]),\n        DstPortNumber = toint(Body[\"id.resp_p\"]),\n        NetworkProtocol = toupper(tostring(Body.proto)),\n        DnsQuery = tostring(Body.query),\n        DnsQueryTypeName = tostring(Body.qtype_name),\n        DnsResponseCode = toint(Body.rcode),\n        DnsResponseCodeName = tostring(Body.rcode_name),\n        DnsSessionId = tostring(Body.trans_id),\n        DnsFlagsAuthoritative = tobool(Body.AA),\n        DnsFlagsRecursionAvailable = tobool(Body.RA),\n        DnsFlagsRecursionDesired = tobool(Body.RD),\n        DnsFlagsTruncated = tobool(Body.TC)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimNetworkSessionOpenSystemsFirewall')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "NetworkSession ASIM parser for Open Systems Firewall",
+                                "functionAlias": "vimNetworkSessionOpenSystemsFirewall",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        Firewall / packet-filter connection log (fwlog)\n// ASIM schema:   Network Session\n// Deploy alias:  vimNetworkSessionOpenSystemsFirewall\n// Owner:         firewall team\n// Aggregated by: ../../../shared/parsers/vimNetworkSessionOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser. It is a member of the unifying\n// Open Systems Network Session parser. Keep the filtering parameter signature so the\n// unifying parser can push filters down for performance.\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table;\n// the raw firewall record is the Body column, ingested as a string (parse with\n// todynamic(Body) before dotted access); the discriminator is ResourceAttributes\n// ['osag.product.name'] == \"firewall\" (the distributor sets this from the \"fwlog\" job).\n//\n// Field source-of-truth: the fwlogs columns in\n// platforms/data-mesh/clickhouse/config/atlas/schemas/firewall/fwlogs.ch.hcl\n// (mv_otlp_logs_to_fwlogs_local maps the raw log fields onto those columns).\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    // Discriminate on the resource attribute set by the OTel distributor.\n    | where tostring(ResourceAttributes['osag.product.name']) == \"firewall\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    // Map raw Body fields onto the ASIM Network Session schema (see schema.json).\n    | project\n        // Firewall records carry no payload timestamp; the event time is the OTLP\n        // record time (mv_otlp_logs_to_fwlogs uses the same LogRecord Timestamp).\n        TimeGenerated,\n        EventVendor = \"Open Systems\",\n        EventProduct = \"Firewall\",\n        EventSchema = \"NetworkSession\",\n        EventSchemaVersion = \"0.2.7\",\n        EventType = \"NetworkSession\",\n        EventOriginalType = tostring(Body.logtype),\n        Dvc = \"Firewall\",\n        DvcInboundInterface = tostring(Body.iface_in),\n        DvcOutboundInterface = tostring(Body.iface_out),\n        DvcAction = case(\n            tolower(tostring(Body.action)) == \"accept\", \"Allow\",\n            tolower(tostring(Body.action)) == \"drop\", \"Deny\",\n            tostring(Body.action)),\n        EventResult = iff(tolower(tostring(Body.action)) == \"accept\", \"Success\", \"Failure\"),\n        SrcIpAddr = tostring(Body.ip_src),\n        SrcPortNumber = toint(Body.port_src),\n        DstIpAddr = tostring(Body.ip_dst),\n        DstPortNumber = toint(Body.port_dst),\n        NetworkProtocol = tostring(Body.protocol_name),\n        NetworkApplicationProtocol = tostring(Body.classified_app_name),\n        NetworkRuleName = tostring(Body.reason),\n        NetworkRuleNumber = toint(Body.rule_id)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimNetworkSessionOpenSystemsNdr')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "NetworkSession ASIM parser for Open Systems NDR",
+                                "functionAlias": "vimNetworkSessionOpenSystemsNdr",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        NDR / Common Security Event (CSE)\n// ASIM schema:   Network Session\n// Deploy alias:  vimNetworkSessionOpenSystemsNdr\n// Owner:         ndr team\n// Aggregated by: ../../../../shared/parsers/vimNetworkSessionOpenSystems.kql\n//\n// NDR emits a Common Security Event (CSE) stream (distributor job ndr/ndr-eventprocessor),\n// which this parser projects onto the ASIM Network Session schema\n// (https://learn.microsoft.com/azure/sentinel/normalization-schema-network). Every CSE\n// record carries the network 5-tuple (source/destination IP + port), protocol and\n// direction of the connection that triggered the detection, so it also describes a\n// network session; the detection context is carried in the optional inspection fields\n// (Threat*). This mirrors the legacy NetworkSession NDR parser\n// documented in docs/deprecated/vimNetworkSessionOpenSystemsNDR.md.\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table; the\n// raw CSE JSON is the Body column, ingested as a string (parse with todynamic(Body)\n// before dotted access); the discriminator is\n// ResourceAttributes['osag.product.name'] == \"ndr\".\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"ndr\"\n    | where tostring(ResourceAttributes['osag.stream']) != \"alerts\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    | project\n        TimeGenerated = todatetime(Body.date_time),\n        EventStartTime = todatetime(Body.date_time),\n        EventEndTime = todatetime(Body.date_time),\n        EventCount = int(1),\n        EventType = \"NetworkSession\",\n        EventResult = \"Success\",\n        EventOriginalType = tostring(Body.type),\n        EventUid = tostring(Body.id),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"NDR\",\n        EventSchema = \"NetworkSession\",\n        EventSchemaVersion = \"0.2.7\",\n        EventSeverity = case(\n            tostring(Body.severity) == \"high\", \"High\",\n            tostring(Body.severity) == \"medium\", \"Medium\",\n            tostring(Body.severity) == \"low\", \"Low\",\n            \"Informational\"),\n        EventOriginalSeverity = tostring(Body.severity),\n        Dvc = tostring(Body.host_name),\n        DvcHostname = tostring(Body.host_name),\n        SrcIpAddr = tostring(Body.source.ip),\n        SrcPortNumber = toint(Body.source.port),\n        SrcHostname = tostring(Body.source.dns_name),\n        SrcGeoCountry = tostring(Body.source.geoip.country_name),\n        SrcGeoLatitude = todouble(Body.source.geoip.latitude),\n        SrcGeoLongitude = todouble(Body.source.geoip.longitude),\n        DstIpAddr = tostring(Body.destination.ip),\n        DstPortNumber = toint(Body.destination.port),\n        DstHostname = tostring(Body.destination.dns_name),\n        DstGeoCountry = tostring(Body.destination.geoip.country_name),\n        DstGeoLatitude = todouble(Body.destination.geoip.latitude),\n        DstGeoLongitude = todouble(Body.destination.geoip.longitude),\n        NetworkProtocol = tostring(Body.ip_protocol_name),\n        NetworkDirection = case(\n            tostring(Body.traffic_direction) == \"inbound\", \"Inbound\",\n            tostring(Body.traffic_direction) == \"outbound\", \"Outbound\",\n            tostring(Body.traffic_direction) == \"intra\", \"Local\",\n            \"\"),\n        // Inspection context: the detection that observed this session.\n        ThreatIpAddr = tostring(Body.correlation_ip),\n        ThreatName = tostring(Body.ids.signature.signature_name),\n        ThreatCategory = tostring(Body.ids.signature.classification_name),\n        ThreatId = tostring(Body.ids.signature.classification_id),\n        ThreatRiskLevel = toint(todouble(Body.threatscore) * 10),\n        ThreatOriginalRiskLevel = tostring(Body.threatscore)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimNetworkSessionOpenSystemsZeek')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "NetworkSession ASIM parser for Open Systems Zeek",
+                                "functionAlias": "vimNetworkSessionOpenSystemsZeek",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        NDR / Zeek conn.log\n// ASIM schema:   Network Session\n// Deploy alias:  vimNetworkSessionOpenSystemsZeek\n// Owner:         ndr team\n// Aggregated by: ../../../../shared/parsers/vimNetworkSessionOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser. It is a member of the unifying\n// Open Systems Network Session parser. Keep the filtering parameter signature so the\n// unifying parser can push filters down for performance.\n//\n// Ingestion model (ADR-0002, native OTLP): all logs land in the single OTelLogs\n// table. The raw Zeek record is the Body column, ingested as a string (parse with\n// todynamic(Body) before field access); the product discriminator is the\n// resource attribute osag.product.name. (Some legacy pipeline config still emits this as\n// osag.log_type; the standard name is osag.product.name per ADR-0002.)\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    // 1. Discriminate on the resource attribute set by the OTel distributor.\n    | where tostring(ResourceAttributes['osag.product.name']) == \"zeek\"\n    // Body is ingested as a JSON string; parse it before field access.\n    | extend Body = todynamic(Body)\n    // 1b. Zeek emits several streams (conn, dns, http, ssl ...) under one product,\n    //     each mapping to a different ASIM schema. Select this stream by its Zeek log\n    //     name, carried in Body.log (e.g. \"conn.log\").\n    | where tostring(Body.log) == \"conn.log\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // 2. Map raw Body fields onto the ASIM Network Session schema (see schema.json).\n    //    Zeek connection-tuple keys carry a literal dot (id.orig_h, id.resp_p), so they\n    //    must be indexed with bracket notation, not dotted access. Body.ts is epoch\n    //    seconds and Body.duration is in seconds (ASIM NetworkDuration is milliseconds).\n    | project\n        TimeGenerated = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventStartTime = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventEndTime = unixtime_seconds_todatetime(todouble(Body.ts) + todouble(Body.duration)),\n        EventCount = int(1),\n        EventType = \"NetworkSession\",\n        EventResult = \"Success\",\n        EventVendor = \"Open Systems\",\n        EventProduct = \"Zeek\",\n        EventSchema = \"NetworkSession\",\n        EventSchemaVersion = \"0.2.7\",\n        Dvc = \"Zeek\",\n        DvcHostname = tostring(Body.host),\n        NetworkSessionId = tostring(Body.uid),\n        SrcIpAddr = tostring(Body[\"id.orig_h\"]),\n        SrcPortNumber = toint(Body[\"id.orig_p\"]),\n        DstIpAddr = tostring(Body[\"id.resp_h\"]),\n        DstPortNumber = toint(Body[\"id.resp_p\"]),\n        NetworkProtocol = toupper(tostring(Body.proto)),\n        NetworkApplicationProtocol = tostring(Body.service),\n        NetworkDirection = case(\n            tobool(Body.local_orig) and tobool(Body.local_resp), \"Local\",\n            tobool(Body.local_orig) and not(tobool(Body.local_resp)), \"Outbound\",\n            not(tobool(Body.local_orig)) and tobool(Body.local_resp), \"Inbound\",\n            \"External\"),\n        SrcBytes = tolong(Body.orig_bytes),\n        DstBytes = tolong(Body.resp_bytes),\n        SrcPackets = tolong(Body.orig_pkts),\n        DstPackets = tolong(Body.resp_pkts),\n        NetworkDuration = toint(todouble(Body.duration) * 1000)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimWebSessionOpenSystemsProxySwg')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "WebSession ASIM parser for Open Systems Secure Web Gateway",
+                                "functionAlias": "vimWebSessionOpenSystemsProxySwg",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        Proxy / Secure Web Gateway access log\n// ASIM schema:   Web Session\n// Deploy alias:  vimWebSessionOpenSystemsProxySwg\n// Owner:         proxy team\n// Aggregated by: ../../../shared/parsers/vimWebSessionOpenSystems.kql\n//\n// Ingestion model (ADR-0002, native OTLP): logs land in the single OTelLogs table;\n// the raw record is the Body column, ingested as a string (parse with todynamic(Body)\n// before dotted access); the discriminator is ResourceAttributes\n// ['osag.product.name'] (the distributor sets \"proxy\" for the SWG access log).\n//\n// Field source-of-truth: the proxy_logs columns in\n// platforms/data-mesh/clickhouse/config/atlas/schemas/proxy/proxy_logs.ch.hcl.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"proxy\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    // Body is ingested as a JSON string; parse it before dotted field access.\n    | extend Body = todynamic(Body)\n    | project\n        TimeGenerated = unixtime_seconds_todatetime(todouble(Body.timestamp)),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"Secure Web Gateway\",\n        EventSchema = \"WebSession\",\n        EventSchemaVersion = \"0.2.7\",\n        Dvc = \"Secure Web Gateway\",\n        SrcIpAddr = tostring(Body.client_ip),\n        DstIpAddr = tostring(Body.server_ip),\n        DstHostname = tostring(Body.host),\n        SrcUsername = tostring(Body.user_id),\n        Url = tostring(Body.url),\n        UrlCategory = tostring(Body.url_filter_categories),\n        HttpRequestMethod = tostring(Body.http_method),\n        HttpStatusCode = toint(Body.client_response_status),\n        HttpContentType = tostring(Body.content_type),\n        HttpUserAgent = tostring(Body.user_agent),\n        HttpReferrer = tostring(Body.referer),\n        SrcBytes = tolong(Body.client_request_size),\n        DstBytes = tolong(Body.client_response_size),\n        NetworkDuration = tolong(Body.duration),\n        DvcAction = tostring(Body.url_filter_action),\n        EventResult = iff(toint(Body.client_response_status) \u003c 400, \"Success\", \"Failure\")\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimWebSessionOpenSystemsZeek')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "WebSession ASIM parser for Open Systems Zeek",
+                                "functionAlias": "vimWebSessionOpenSystemsZeek",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Source:        NDR / Zeek http.log\n// ASIM schema:   Web Session\n// Deploy alias:  vimWebSessionOpenSystemsZeek\n// Owner:         ndr team\n// Aggregated by: ../../../../shared/parsers/vimWebSessionOpenSystems.kql\n//\n// Per-source (\"source-specific\") ASIM parser for the Zeek http.log stream. One product\n// (Zeek) fans out into several ASIM schemas: conn -\u003e NetworkSession, dns -\u003e Dns,\n// http -\u003e WebSession. Each stream is its own folder with its own schema.json + parser.\n//\n// Ingestion model (ADR-0002, native OTLP): all logs land in the single OTelLogs\n// table. The raw Zeek record is the Body column, ingested as a string (parse with\n// todynamic(Body) before field access); the product discriminator is the\n// resource attribute osag.product.name, and the stream is selected via the Zeek log path.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    OTelLogs\n    | where not(disabled)\n    | where tostring(ResourceAttributes['osag.product.name']) == \"zeek\"\n    // Body is ingested as a JSON string; parse it before field access.\n    | extend Body = todynamic(Body)\n    | where tostring(Body.log) == \"http.log\"\n    | where (isnull(starttime) or TimeGenerated \u003e= starttime)\n    | where (isnull(endtime) or TimeGenerated \u003c= endtime)\n    | project\n        TimeGenerated = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventStartTime = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventEndTime = unixtime_seconds_todatetime(todouble(Body.ts)),\n        EventCount = int(1),\n        EventType = \"HTTPsession\",\n        EventResult = iff(toint(Body.status_code) \u003e= 400, \"Failure\", \"Success\"),\n        EventUid = tostring(Body.uid),\n        EventVendor = \"Open Systems\",\n        EventProduct = \"Zeek\",\n        EventSchema = \"WebSession\",\n        EventSchemaVersion = \"0.2.7\",\n        Dvc = \"Zeek\",\n        DvcHostname = tostring(Body.host),\n        NetworkSessionId = tostring(Body.uid),\n        SrcIpAddr = tostring(Body[\"id.orig_h\"]),\n        SrcPortNumber = toint(Body[\"id.orig_p\"]),\n        DstIpAddr = tostring(Body[\"id.resp_h\"]),\n        DstPortNumber = toint(Body[\"id.resp_p\"]),\n        NetworkApplicationProtocol = \"HTTP\",\n        // The Zeek HTTP Host header is not carried separately here — the envelope's\n        // Body.host is the sensor hostname — so Url uses the request URI, which for a\n        // CONNECT request already contains the target host:port.\n        Url = tostring(Body.uri),\n        HttpRequestMethod = tostring(Body.method),\n        HttpVersion = tostring(Body.version),\n        // ASIM types HttpStatusCode as a string; toint() first drops the JSON \".0\".\n        HttpStatusCode = tostring(toint(Body.status_code)),\n        HttpUserAgent = tostring(Body.user_agent)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAlertEventOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems Alert Event",
+                                "functionAlias": "vimAlertEventOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems Alert Event\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/asim_parser.kql whose schema.json\n//                  declares asim.schema == \"AlertEvent\".\n//\n// This is the \"vendor wrapper\" / unifying parser: it unions all source-specific\n// Alert Event parsers into one normalized ASIM view. Add one line per new source.\n//\n// ASIM naming note: in upstream ASIM the unifying parser is named `_Im_AlertEvent`\n// and the per-source parsers `vimAlertEvent\u003cVendor\u003e`. Open Systems keeps the vendor\n// suffix on the union (`vimAlertEventOpenSystems`); confirm the final convention\n// with OSAP before deploying the savedSearches FunctionAlias.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimAlertEventOpenSystemsNdrAlerts(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuditEventOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems Audit Event",
+                                "functionAlias": "vimAuditEventOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems Audit Event\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/**/asim_parser.kql whose schema.json\n//                  declares asim.schema == \"AuditEvent\".\n//\n// Vendor \"wrapper\" / unifying parser: unions all source-specific Audit Event parsers into\n// one normalized ASIM view. Add one line per new source.\n//\n// ASIM naming note: upstream ASIM names the unifier `_Im_AuditEvent` and per-source parsers\n// `imAuditEvent\u003cVendor\u003e`. Open Systems keeps the vendor suffix on the union\n// (`vimAuditEventOpenSystems`); confirm the final convention with OSAP before deploying the\n// savedSearches FunctionAlias.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimAuditEventOpenSystemsZtna(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuthenticationOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems Authentication",
+                                "functionAlias": "vimAuthenticationOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems Authentication\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/\u003cstream\u003e/asim_parser.kql whose\n//                  schema.json declares asim.schema == \"Authentication\".\n//\n// Unions all source-specific Authentication parsers into one normalized ASIM view. Add\n// one line per new source. Note that a single product can contribute to several schemas:\n// the ZTNA IDAC activity stream feeds this union, while other streams may feed\n// vimNetworkSessionOpenSystems or vimWebSessionOpenSystems.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimAuthenticationOpenSystemsZtna(starttime, endtime, disabled),\n        vimAuthenticationOpenSystemsMep(starttime, endtime, disabled),\n        vimAuthenticationOpenSystemsAuth(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDhcpEventOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems DhcpEvent",
+                                "functionAlias": "vimDhcpEventOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems DhcpEvent\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/\u003cstream\u003e/asim_parser.kql whose\n//                  schema.json declares asim.schema == \"DhcpEvent\".\n//\n// Unions all source-specific DhcpEvent parsers into one normalized ASIM view. Add one\n// line per new source.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimDhcpEventOpenSystemsDhcp(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDnsOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems Dns",
+                                "functionAlias": "vimDnsOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems Dns\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/\u003cstream\u003e/asim_parser.kql whose\n//                  schema.json declares asim.schema == \"Dns\".\n//\n// Unions all source-specific Dns parsers into one normalized ASIM view. Add one line\n// per new source. Note that a single product can contribute to several schemas: the\n// Zeek dns.log stream feeds this union, while its conn.log and http.log streams feed\n// vimNetworkSessionOpenSystems and vimWebSessionOpenSystems respectively.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimDnsOpenSystemsZeek(starttime, endtime, disabled),\n        vimDnsOpenSystemsDnsInspection(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimNetworkSessionOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems Network Session",
+                                "functionAlias": "vimNetworkSessionOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems Network Session\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/asim_parser.kql whose schema.json\n//                  declares asim.schema == \"NetworkSession\".\n//\n// This is the \"vendor wrapper\" / unifying parser: it unions all source-specific\n// Network Session parsers into one normalized ASIM view. Add one line per new source.\n//\n// ASIM naming note: in upstream ASIM the unifying parser is named `_Im_NetworkSession`\n// and the per-source parsers `vimNetworkSession\u003cVendor\u003e`. Open Systems keeps the vendor\n// suffix on the union (`vimNetworkSessionOpenSystems`); confirm the final convention\n// with OSAP before deploying the savedSearches FunctionAlias.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimNetworkSessionOpenSystemsZeek(starttime, endtime, disabled),\n        vimNetworkSessionOpenSystemsFirewall(starttime, endtime, disabled),\n        vimNetworkSessionOpenSystemsNdr(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimWebSessionOpenSystems')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Unifying parser: Open Systems Web Session",
+                                "functionAlias": "vimWebSessionOpenSystems",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Unifying parser: Open Systems Web Session\n// Owner:           service teams\n// Members:         every sources/\u003cservice\u003e/\u003cvendor\u003e/asim_parser.kql whose schema.json\n//                  declares asim.schema == \"WebSession\".\n//\n// Unions all source-specific Web Session parsers into one normalized ASIM view.\n// Add one line per new source.\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimWebSessionOpenSystemsProxySwg(starttime, endtime, disabled),\n        vimWebSessionOpenSystemsZeek(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAlertEventCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: Alert Event   (deploy FunctionAlias: vimAlertEventCustom)",
+                                "functionAlias": "vimAlertEventCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: Alert Event   (deploy FunctionAlias: vimAlertEventCustom)\n// Owner:                  service teams\n//\n// This is the ASIM *customization seam*. Microsoft's built-in unifying parser\n// `_Im_AlertEvent` automatically unions `vimAlertEventCustom`, so every source\n// reachable from here becomes queryable through the standard ASIM entry point used by\n// analytics rules, workbooks and hunting queries:\n//\n//   _Im_AlertEvent()                              \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimAlertEventCustom                \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimAlertEventOpenSystems      \u003c- vendor union (shared/parsers/)\n//               └─ union vimAlertEventOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are added\n// to vimAlertEventOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimAlertEventOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuditEventCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: Audit Event   (deploy FunctionAlias: vimAuditEventCustom)",
+                                "functionAlias": "vimAuditEventCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: Audit Event   (deploy FunctionAlias: vimAuditEventCustom)\n// Owner:                  service teams\n//\n// ASIM customization seam. Microsoft's built-in `_Im_AuditEvent` automatically unions\n// `vimAuditEventCustom`, so every source reachable from here becomes queryable through the\n// standard ASIM entry point used by analytics rules, workbooks and hunting queries:\n//\n//   _Im_AuditEvent()                            \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimAuditEventCustom              \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimAuditEventOpenSystems    \u003c- vendor union (shared/parsers/)\n//               └─ union vimAuditEventOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are added\n// to vimAuditEventOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimAuditEventOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimAuthenticationCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: Authentication   (deploy FunctionAlias: vimAuthenticationCustom)",
+                                "functionAlias": "vimAuthenticationCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: Authentication   (deploy FunctionAlias: vimAuthenticationCustom)\n// Owner:                  service teams\n//\n// This is the ASIM *customization seam*. Microsoft's built-in unifying parser\n// `_Im_Authentication` automatically unions `vimAuthenticationCustom`, so every source\n// reachable from here becomes queryable through the standard ASIM entry point used by\n// analytics rules, workbooks and hunting queries:\n//\n//   _Im_Authentication()                              \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimAuthenticationCustom                \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimAuthenticationOpenSystems      \u003c- vendor union (shared/parsers/)\n//               └─ union vimAuthenticationOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are\n// added to vimAuthenticationOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimAuthenticationOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDhcpEventCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: DhcpEvent   (deploy FunctionAlias: vimDhcpEventCustom)",
+                                "functionAlias": "vimDhcpEventCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: DhcpEvent   (deploy FunctionAlias: vimDhcpEventCustom)\n// Owner:                  service teams\n//\n// This is the ASIM *customization seam*. Microsoft's built-in unifying parser\n// `_Im_DhcpEvent` automatically unions `vimDhcpEventCustom`, so every source reachable\n// from here becomes queryable through the standard ASIM entry point used by analytics\n// rules, workbooks and hunting queries:\n//\n//   _Im_DhcpEvent()                                \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimDhcpEventCustom                  \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimDhcpEventOpenSystems        \u003c- vendor union (shared/parsers/)\n//               └─ union vimDhcpEventOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are\n// added to vimDhcpEventOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimDhcpEventOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimDnsCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: Dns   (deploy FunctionAlias: vimDnsCustom)",
+                                "functionAlias": "vimDnsCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: Dns   (deploy FunctionAlias: vimDnsCustom)\n// Owner:                  service teams\n//\n// This is the ASIM *customization seam*. Microsoft's built-in unifying parser\n// `_Im_Dns` automatically unions `vimDnsCustom`, so every source reachable from here\n// becomes queryable through the standard ASIM entry point used by analytics rules,\n// workbooks and hunting queries:\n//\n//   _Im_Dns()                              \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimDnsCustom                \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimDnsOpenSystems      \u003c- vendor union (shared/parsers/)\n//               └─ union vimDnsOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are\n// added to vimDnsOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimDnsOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimNetworkSessionCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: Network Session   (deploy FunctionAlias: vimNetworkSessionCustom)",
+                                "functionAlias": "vimNetworkSessionCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: Network Session   (deploy FunctionAlias: vimNetworkSessionCustom)\n// Owner:                  service teams\n//\n// This is the ASIM *customization seam*. Microsoft's built-in unifying parser\n// `_Im_NetworkSession` automatically unions `vimNetworkSessionCustom`, so every source\n// reachable from here becomes queryable through the standard ASIM entry point used by\n// analytics rules, workbooks and hunting queries:\n//\n//   _Im_NetworkSession()                              \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimNetworkSessionCustom                \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimNetworkSessionOpenSystems      \u003c- vendor union (shared/parsers/)\n//               └─ union vimNetworkSessionOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are added\n// to vimNetworkSessionOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimNetworkSessionOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        },
+                        {
+                            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+                            "apiVersion": "2025-07-01",
+                            "name": "[concat(parameters('workspaceName'), '/', 'vimWebSessionCustom')]",
+                            "properties": {
+                                "category": "ASIM",
+                                "displayName": "Custom unifying parser: Web Session   (deploy FunctionAlias: vimWebSessionCustom)",
+                                "functionAlias": "vimWebSessionCustom",
+                                "functionParameters": "starttime:datetime=datetime(null),endtime:datetime=datetime(null),disabled:bool=false",
+                                "query": "// Custom unifying parser: Web Session   (deploy FunctionAlias: vimWebSessionCustom)\n// Owner:                  service teams\n//\n// This is the ASIM *customization seam*. Microsoft's built-in unifying parser\n// `_Im_WebSession` automatically unions `vimWebSessionCustom`, so every source reachable\n// from here becomes queryable through the standard ASIM entry point used by analytics\n// rules, workbooks and hunting queries:\n//\n//   _Im_WebSession()                              \u003c- Microsoft built-in (do NOT author/redeploy)\n//     └─ union vimWebSessionCustom                \u003c- THIS FILE (our bridge into ASIM)\n//          └─ union vimWebSessionOpenSystems      \u003c- vendor union (shared/parsers/)\n//               └─ union vimWebSessionOpenSystems\u003cProduct\u003e   \u003c- per-source parsers (sources/)\n//\n// Add one line here per *vendor union* (not per source). New Open Systems sources are added\n// to vimWebSessionOpenSystems, which this file already includes.\n//\n// See https://learn.microsoft.com/azure/sentinel/normalization-manage-parsers\nlet parser = (\n    starttime: datetime = datetime(null),\n    endtime: datetime = datetime(null),\n    disabled: bool = false\n) {\n    union isfuzzy=true\n        vimWebSessionOpenSystems(starttime, endtime, disabled)\n};\nparser(starttime, endtime, disabled)\n",
+                                "version": 2
+                            }
+                        }
+                    ]
+                },
+                "parameters": {
+                    "workspaceName": {
+                        "value": "[parameters('workspaceName')]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "collectorConnection": {
+            "type": "object",
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'opensystems-integration-resources'), '2025-04-01').outputs.collectorConnection.value]"
+        }
+    }
+}

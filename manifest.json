@@ -1,0 +1,135 @@
+{
+    "packageVersion": "2.0.6",
+    "armContentVersion": "2.0.6",
+    "resources": {
+        "dataCollectionEndpoint": "opensystems-otlp-dce",
+        "dataCollectionRules": [
+            "opensystems-auth-dcr",
+            "opensystems-dhcp-dcr",
+            "opensystems-dns_inspection-dcr",
+            "opensystems-firewall-dcr",
+            "opensystems-mep-dcr",
+            "opensystems-ndr-dcr",
+            "opensystems-proxy-dcr",
+            "opensystems-zeek-dcr",
+            "opensystems-ztna-dcr"
+        ],
+        "roleAssignments": {
+            "count": 9,
+            "role": "Monitoring Metrics Publisher"
+        },
+        "savedSearches": [
+            {
+                "alias": "vimAlertEventOpenSystemsNdrAlerts",
+                "displayName": "AlertEvent ASIM parser for Open Systems NDR"
+            },
+            {
+                "alias": "vimAuditEventOpenSystemsZtna",
+                "displayName": "AuditEvent ASIM parser for Open Systems ZTNA"
+            },
+            {
+                "alias": "vimAuthenticationOpenSystemsAuth",
+                "displayName": "Authentication ASIM parser for Open Systems Auth"
+            },
+            {
+                "alias": "vimAuthenticationOpenSystemsMep",
+                "displayName": "Authentication ASIM parser for Open Systems MEP"
+            },
+            {
+                "alias": "vimAuthenticationOpenSystemsZtna",
+                "displayName": "Authentication ASIM parser for Open Systems ZTNA"
+            },
+            {
+                "alias": "vimDhcpEventOpenSystemsDhcp",
+                "displayName": "DhcpEvent ASIM parser for Open Systems DHCP"
+            },
+            {
+                "alias": "vimDnsOpenSystemsDnsInspection",
+                "displayName": "Dns ASIM parser for Open Systems DNS Inspection"
+            },
+            {
+                "alias": "vimDnsOpenSystemsZeek",
+                "displayName": "Dns ASIM parser for Open Systems Zeek"
+            },
+            {
+                "alias": "vimNetworkSessionOpenSystemsFirewall",
+                "displayName": "NetworkSession ASIM parser for Open Systems Firewall"
+            },
+            {
+                "alias": "vimNetworkSessionOpenSystemsNdr",
+                "displayName": "NetworkSession ASIM parser for Open Systems NDR"
+            },
+            {
+                "alias": "vimNetworkSessionOpenSystemsZeek",
+                "displayName": "NetworkSession ASIM parser for Open Systems Zeek"
+            },
+            {
+                "alias": "vimWebSessionOpenSystemsProxySwg",
+                "displayName": "WebSession ASIM parser for Open Systems Secure Web Gateway"
+            },
+            {
+                "alias": "vimWebSessionOpenSystemsZeek",
+                "displayName": "WebSession ASIM parser for Open Systems Zeek"
+            },
+            {
+                "alias": "vimAlertEventOpenSystems",
+                "displayName": "Unifying parser: Open Systems Alert Event"
+            },
+            {
+                "alias": "vimAuditEventOpenSystems",
+                "displayName": "Unifying parser: Open Systems Audit Event"
+            },
+            {
+                "alias": "vimAuthenticationOpenSystems",
+                "displayName": "Unifying parser: Open Systems Authentication"
+            },
+            {
+                "alias": "vimDhcpEventOpenSystems",
+                "displayName": "Unifying parser: Open Systems DhcpEvent"
+            },
+            {
+                "alias": "vimDnsOpenSystems",
+                "displayName": "Unifying parser: Open Systems Dns"
+            },
+            {
+                "alias": "vimNetworkSessionOpenSystems",
+                "displayName": "Unifying parser: Open Systems Network Session"
+            },
+            {
+                "alias": "vimWebSessionOpenSystems",
+                "displayName": "Unifying parser: Open Systems Web Session"
+            },
+            {
+                "alias": "vimAlertEventCustom",
+                "displayName": "Custom unifying parser: Alert Event   (deploy FunctionAlias: vimAlertEventCustom)"
+            },
+            {
+                "alias": "vimAuditEventCustom",
+                "displayName": "Custom unifying parser: Audit Event   (deploy FunctionAlias: vimAuditEventCustom)"
+            },
+            {
+                "alias": "vimAuthenticationCustom",
+                "displayName": "Custom unifying parser: Authentication   (deploy FunctionAlias: vimAuthenticationCustom)"
+            },
+            {
+                "alias": "vimDhcpEventCustom",
+                "displayName": "Custom unifying parser: DhcpEvent   (deploy FunctionAlias: vimDhcpEventCustom)"
+            },
+            {
+                "alias": "vimDnsCustom",
+                "displayName": "Custom unifying parser: Dns   (deploy FunctionAlias: vimDnsCustom)"
+            },
+            {
+                "alias": "vimNetworkSessionCustom",
+                "displayName": "Custom unifying parser: Network Session   (deploy FunctionAlias: vimNetworkSessionCustom)"
+            },
+            {
+                "alias": "vimWebSessionCustom",
+                "displayName": "Custom unifying parser: Web Session   (deploy FunctionAlias: vimWebSessionCustom)"
+            }
+        ]
+    },
+    "files": {
+        "mainTemplate.json": "sha256:be95c470c468838d579ddf357077796e6c7e3f68a12b3756a8551ca923f7d346"
+    }
+}
