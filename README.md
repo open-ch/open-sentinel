@@ -6,6 +6,7 @@ This package deploys Open Systems' ASIM (Advanced Security Information Model) lo
 | --- | --- |
 | `mainTemplate.json` | The ARM template you deploy. Creates a Data Collection Endpoint, one Data Collection Rule per product, and the ASIM log parsers as Sentinel saved-search functions. |
 | `manifest.json` | The authoritative inventory of this package: its version, the literal Azure resources it provisions (Data Collection Endpoint, Data Collection Rules, role assignments), every deployed parser function (under `resources.savedSearches`), and a checksum of `mainTemplate.json`. |
+| [`RELEASE_TEMPLATE.md`](RELEASE_TEMPLATE.md) | The template Open Systems uses to prepare consistent customer-facing GitHub release notes. It is not part of the Azure deployment. |
 | `README.md` | This file. |
 
 ## Overview of the process
