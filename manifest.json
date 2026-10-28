@@ -24,80 +24,160 @@
                 "displayName": "AlertEvent ASIM parser for Open Systems NDR"
             },
             {
+                "alias": "ASimAlertEventOpenSystemsNdrAlerts",
+                "displayName": "AlertEvent ASIM parser for Open Systems NDR (non-filtering)"
+            },
+            {
                 "alias": "vimAuditEventOpenSystemsZtna",
                 "displayName": "AuditEvent ASIM parser for Open Systems ZTNA"
+            },
+            {
+                "alias": "ASimAuditEventOpenSystemsZtna",
+                "displayName": "AuditEvent ASIM parser for Open Systems ZTNA (non-filtering)"
             },
             {
                 "alias": "vimAuthenticationOpenSystemsAuth",
                 "displayName": "Authentication ASIM parser for Open Systems Auth"
             },
             {
+                "alias": "ASimAuthenticationOpenSystemsAuth",
+                "displayName": "Authentication ASIM parser for Open Systems Auth (non-filtering)"
+            },
+            {
                 "alias": "vimAuthenticationOpenSystemsMep",
                 "displayName": "Authentication ASIM parser for Open Systems MEP"
+            },
+            {
+                "alias": "ASimAuthenticationOpenSystemsMep",
+                "displayName": "Authentication ASIM parser for Open Systems MEP (non-filtering)"
             },
             {
                 "alias": "vimAuthenticationOpenSystemsZtna",
                 "displayName": "Authentication ASIM parser for Open Systems ZTNA"
             },
             {
+                "alias": "ASimAuthenticationOpenSystemsZtna",
+                "displayName": "Authentication ASIM parser for Open Systems ZTNA (non-filtering)"
+            },
+            {
                 "alias": "vimDhcpEventOpenSystemsDhcp",
                 "displayName": "DhcpEvent ASIM parser for Open Systems DHCP"
+            },
+            {
+                "alias": "ASimDhcpEventOpenSystemsDhcp",
+                "displayName": "DhcpEvent ASIM parser for Open Systems DHCP (non-filtering)"
             },
             {
                 "alias": "vimDnsOpenSystemsDnsInspection",
                 "displayName": "Dns ASIM parser for Open Systems DNS Inspection"
             },
             {
+                "alias": "ASimDnsOpenSystemsDnsInspection",
+                "displayName": "Dns ASIM parser for Open Systems DNS Inspection (non-filtering)"
+            },
+            {
                 "alias": "vimDnsOpenSystemsZeek",
                 "displayName": "Dns ASIM parser for Open Systems Zeek"
+            },
+            {
+                "alias": "ASimDnsOpenSystemsZeek",
+                "displayName": "Dns ASIM parser for Open Systems Zeek (non-filtering)"
             },
             {
                 "alias": "vimNetworkSessionOpenSystemsFirewall",
                 "displayName": "NetworkSession ASIM parser for Open Systems Firewall"
             },
             {
+                "alias": "ASimNetworkSessionOpenSystemsFirewall",
+                "displayName": "NetworkSession ASIM parser for Open Systems Firewall (non-filtering)"
+            },
+            {
                 "alias": "vimNetworkSessionOpenSystemsNdr",
                 "displayName": "NetworkSession ASIM parser for Open Systems NDR"
+            },
+            {
+                "alias": "ASimNetworkSessionOpenSystemsNdr",
+                "displayName": "NetworkSession ASIM parser for Open Systems NDR (non-filtering)"
             },
             {
                 "alias": "vimNetworkSessionOpenSystemsZeek",
                 "displayName": "NetworkSession ASIM parser for Open Systems Zeek"
             },
             {
+                "alias": "ASimNetworkSessionOpenSystemsZeek",
+                "displayName": "NetworkSession ASIM parser for Open Systems Zeek (non-filtering)"
+            },
+            {
                 "alias": "vimWebSessionOpenSystemsProxySwg",
                 "displayName": "WebSession ASIM parser for Open Systems Secure Web Gateway"
+            },
+            {
+                "alias": "ASimWebSessionOpenSystemsProxySwg",
+                "displayName": "WebSession ASIM parser for Open Systems Secure Web Gateway (non-filtering)"
             },
             {
                 "alias": "vimWebSessionOpenSystemsZeek",
                 "displayName": "WebSession ASIM parser for Open Systems Zeek"
             },
             {
+                "alias": "ASimWebSessionOpenSystemsZeek",
+                "displayName": "WebSession ASIM parser for Open Systems Zeek (non-filtering)"
+            },
+            {
                 "alias": "vimAlertEventOpenSystems",
                 "displayName": "Unifying parser: Open Systems Alert Event"
+            },
+            {
+                "alias": "ASimAlertEventOpenSystems",
+                "displayName": "Unifying parser: Open Systems Alert Event (non-filtering)"
             },
             {
                 "alias": "vimAuditEventOpenSystems",
                 "displayName": "Unifying parser: Open Systems Audit Event"
             },
             {
+                "alias": "ASimAuditEventOpenSystems",
+                "displayName": "Unifying parser: Open Systems Audit Event (non-filtering)"
+            },
+            {
                 "alias": "vimAuthenticationOpenSystems",
                 "displayName": "Unifying parser: Open Systems Authentication"
+            },
+            {
+                "alias": "ASimAuthenticationOpenSystems",
+                "displayName": "Unifying parser: Open Systems Authentication (non-filtering)"
             },
             {
                 "alias": "vimDhcpEventOpenSystems",
                 "displayName": "Unifying parser: Open Systems DhcpEvent"
             },
             {
+                "alias": "ASimDhcpEventOpenSystems",
+                "displayName": "Unifying parser: Open Systems DhcpEvent (non-filtering)"
+            },
+            {
                 "alias": "vimDnsOpenSystems",
                 "displayName": "Unifying parser: Open Systems Dns"
+            },
+            {
+                "alias": "ASimDnsOpenSystems",
+                "displayName": "Unifying parser: Open Systems Dns (non-filtering)"
             },
             {
                 "alias": "vimNetworkSessionOpenSystems",
                 "displayName": "Unifying parser: Open Systems Network Session"
             },
             {
+                "alias": "ASimNetworkSessionOpenSystems",
+                "displayName": "Unifying parser: Open Systems Network Session (non-filtering)"
+            },
+            {
                 "alias": "vimWebSessionOpenSystems",
                 "displayName": "Unifying parser: Open Systems Web Session"
+            },
+            {
+                "alias": "ASimWebSessionOpenSystems",
+                "displayName": "Unifying parser: Open Systems Web Session (non-filtering)"
             },
             {
                 "alias": "vimAlertEventCustom",
@@ -130,6 +210,6 @@
         ]
     },
     "files": {
-        "mainTemplate.json": "sha256:d69fbc9c2db35d385b862745c591908cb9399ce51dec443183f0064c36747539"
+        "mainTemplate.json": "sha256:bc91ea017a32079697943447ecdb4a879d16cb2f880a2c0a378fdc2b790d74c3"
     }
 }
