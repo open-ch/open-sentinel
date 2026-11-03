@@ -1,6 +1,6 @@
 {
-    "packageVersion": "1.0.0",
-    "armContentVersion": "1.0.0",
+    "packageVersion": "1.1.0",
+    "armContentVersion": "1.1.0",
     "resources": {
         "dataCollectionEndpoint": "opensystems-otlp-dce",
         "dataCollectionRules": [
@@ -210,6 +210,6 @@
         ]
     },
     "files": {
-        "mainTemplate.json": "sha256:bc91ea017a32079697943447ecdb4a879d16cb2f880a2c0a378fdc2b790d74c3"
+        "mainTemplate.json": "sha256:8ed4e07a5e752f43fc6bf2c4b5726eec5e0919eb3115ab3ec3658d4208386591"
     }
 }
